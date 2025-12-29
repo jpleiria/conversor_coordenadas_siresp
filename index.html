@@ -12,14 +12,19 @@
         body { background: #0f172a; min-height: 100vh; font-family: 'Inter', sans-serif; color: #e2e8f0; }
         .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
         
-        /* Estilo melhorado das Tabs */
         .tab-container { background: rgba(15, 23, 42, 0.6); padding: 4px; border-radius: 1rem; border: 1px solid rgba(255, 255, 255, 0.05); }
         .tab-btn { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 0.75rem; position: relative; }
         .tab-active { background: #3b82f6; color: white; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); }
         .tab-inactive { color: #64748b; }
         .tab-inactive:hover { color: #cbd5e1; background: rgba(255, 255, 255, 0.03); }
 
-        #map { height: 320px; border-radius: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.1); margin-top: 1rem; width: 100%; }
+        /* Estilos do Mapa e Modo Seleção */
+        #map-container { position: relative; margin-top: 1rem; }
+        #map { height: 320px; border-radius: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.1); width: 100%; transition: all 0.3s; }
+        #map.selection-mode { cursor: crosshair; border: 2px solid #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.5); }
+        
+        .map-control-btn { position: absolute; top: 12px; right: 12px; z-index: 1000; }
+
         .input-dark { background: #020617; border: 1px solid #334155; border-radius: 0.75rem; padding: 0.85rem; outline: none; width: 100%; text-align: center; color: white; }
         .btn-action:active { transform: scale(0.96); }
         .label-unit { font-size: 0.65rem; text-transform: uppercase; color: #64748b; font-weight: 800; letter-spacing: 0.05em; }
@@ -42,7 +47,7 @@
                     </p>
                 </div>
             </div>
-            <button onclick="getGPSLocation()" class="bg-blue-600 hover:bg-blue-500 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg shadow-blue-900/40 btn-action">
+            <button onclick="getGPSLocation()" title="Minha Localização GPS" class="bg-blue-600 hover:bg-blue-500 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg shadow-blue-900/40 btn-action">
                 <i class="fas fa-location-crosshairs text-xl"></i>
             </button>
         </header>
@@ -147,7 +152,7 @@
                 </div>
                 
                 <div class="bg-slate-900/90 p-5 rounded-2xl border border-emerald-500/30 flex justify-between items-center">
-                    <div id="outDec" class="text-lg font-mono text-white leading-relaxed font-bold">---</div>
+                    <div id="outDec" class="text-lg font-mono text-white font-bold">---</div>
                     <div class="flex gap-3 text-white">
                         <button onclick="copyText('outDec')" title="Copiar" class="text-slate-400 hover:text-white"><i class="fas fa-copy text-xl"></i></button>
                         <button onclick="shareWhatsApp('outDec')" title="WhatsApp" class="text-emerald-500 hover:text-emerald-400"><i class="fab fa-whatsapp text-2xl"></i></button>
@@ -155,13 +160,19 @@
                 </div>
             </div>
 
-           <div id="map"></div>
+            <div id="map-container">
+                <button id="btnToggleSelect" onclick="toggleSelectionMode()" class="map-control-btn bg-white text-slate-900 w-10 h-10 rounded-lg shadow-xl flex items-center justify-center border-2 border-transparent hover:bg-blue-50 transition-colors" title="Ativar Seleção no Mapa">
+                    <i class="fas fa-bullseye text-lg"></i>
+                </button>
+                <div id="map"></div>
+            </div>
+            <p id="map-hint" class="text-[9px] text-slate-500 text-center mt-2 uppercase tracking-widest italic">Toque no ícone da mira para escolher no mapa</p>
         </div>
 
         <footer class="w-full mt-8 px-4 text-center text-xs text-gray-500 leading-relaxed">
             SCh2ª João Paulo Pereira<br>
             Companhia Bombeiros Sapadores Leiria<br>
-            - Versão 1.9 -
+            - Versão 1.9.2 -
         </footer>
 
     </div>
@@ -170,6 +181,44 @@
         var map = L.map('map', { zoomControl: false }).setView([39.5, -8.0], 7);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         var marker = L.marker([39.5, -8.0]).addTo(map);
+
+        let isSelectionMode = false;
+
+        function toggleSelectionMode() {
+            isSelectionMode = !isSelectionMode;
+            const btn = document.getElementById('btnToggleSelect');
+            const mapEl = document.getElementById('map');
+            const hint = document.getElementById('map-hint');
+
+            if (isSelectionMode) {
+                btn.classList.replace('text-slate-900', 'text-blue-600');
+                btn.classList.add('border-blue-600', 'ring-4', 'ring-blue-500/20');
+                mapEl.classList.add('selection-mode');
+                hint.innerText = "Modo Seleção Ativo: Toque no mapa para capturar";
+                hint.classList.replace('text-slate-500', 'text-blue-400');
+            } else {
+                btn.classList.replace('text-blue-600', 'text-slate-900');
+                btn.classList.remove('border-blue-600', 'ring-4', 'ring-blue-500/20');
+                mapEl.classList.remove('selection-mode');
+                hint.innerText = "Toque no ícone da mira para escolher no mapa";
+                hint.classList.replace('text-blue-400', 'text-slate-500');
+            }
+        }
+
+        map.on('click', function(e) {
+            if (!isSelectionMode) return; // Só funciona se o botão estiver ativo
+
+            const lat = e.latlng.lat.toFixed(6);
+            const lon = e.latlng.lng.toFixed(6);
+            
+            document.getElementById('fullCoords').value = `${lat}, ${lon}`;
+            
+            switchTab('toDMS');
+            runToDMS();
+            
+            // Desativa automaticamente após selecionar (opcional, para segurança)
+            toggleSelectionMode();
+        });
 
         function updateMap(lat, lon) {
             map.setView([lat, lon], 16);
@@ -187,7 +236,6 @@
             document.getElementById('panelToDMS').classList.toggle('hidden', !isDMS);
             document.getElementById('panelToDec').classList.toggle('hidden', isDMS);
             
-            // Atualização visual dos botões
             const btnDMS = document.getElementById('tabToDMS');
             const btnDec = document.getElementById('tabToDec');
             
