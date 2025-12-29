@@ -11,7 +11,14 @@
     <style>
         body { background: #0f172a; min-height: 100vh; font-family: 'Inter', sans-serif; color: #e2e8f0; }
         .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .tab-active { border-bottom: 3px solid #3b82f6; color: #3b82f6; }
+        
+        /* Estilo melhorado das Tabs */
+        .tab-container { background: rgba(15, 23, 42, 0.6); padding: 4px; border-radius: 1rem; border: 1px solid rgba(255, 255, 255, 0.05); }
+        .tab-btn { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 0.75rem; position: relative; }
+        .tab-active { background: #3b82f6; color: white; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); }
+        .tab-inactive { color: #64748b; }
+        .tab-inactive:hover { color: #cbd5e1; background: rgba(255, 255, 255, 0.03); }
+
         #map { height: 320px; border-radius: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.1); margin-top: 1rem; width: 100%; }
         .input-dark { background: #020617; border: 1px solid #334155; border-radius: 0.75rem; padding: 0.85rem; outline: none; width: 100%; text-align: center; color: white; }
         .btn-action:active { transform: scale(0.96); }
@@ -40,9 +47,13 @@
             </button>
         </header>
 
-        <div class="flex border-b border-slate-700">
-            <button onclick="switchTab('toDMS')" id="tabToDMS" class="flex-1 py-3 font-bold tab-active text-xs uppercase tracking-widest">Maps ➔ SIRESP</button>
-            <button onclick="switchTab('toDec')" id="tabToDec" class="flex-1 py-3 font-bold text-slate-500 text-xs uppercase tracking-widest">SIRESP ➔ Maps</button>
+        <div class="tab-container flex gap-1">
+            <button onclick="switchTab('toDMS')" id="tabToDMS" class="tab-btn flex-1 py-3 font-bold text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 tab-active">
+                <i class="fas fa-map-marker-alt"></i> Maps ➔ SIRESP
+            </button>
+            <button onclick="switchTab('toDec')" id="tabToDec" class="tab-btn flex-1 py-3 font-bold text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 tab-inactive">
+                SIRESP ➔ Maps <i class="fas fa-globe-europe"></i>
+            </button>
         </div>
 
         <div class="glass rounded-3xl p-6 shadow-2xl space-y-5">
@@ -175,25 +186,31 @@
             const isDMS = mode === 'toDMS';
             document.getElementById('panelToDMS').classList.toggle('hidden', !isDMS);
             document.getElementById('panelToDec').classList.toggle('hidden', isDMS);
-            document.getElementById('tabToDMS').className = isDMS ? 'flex-1 py-3 font-bold tab-active text-xs uppercase tracking-widest' : 'flex-1 py-3 font-bold text-slate-500 text-xs uppercase tracking-widest';
-            document.getElementById('tabToDec').className = !isDMS ? 'flex-1 py-3 font-bold tab-active text-xs uppercase tracking-widest' : 'flex-1 py-3 font-bold text-slate-500 text-xs uppercase tracking-widest';
+            
+            // Atualização visual dos botões
+            const btnDMS = document.getElementById('tabToDMS');
+            const btnDec = document.getElementById('tabToDec');
+            
+            if(isDMS) {
+                btnDMS.className = 'tab-btn flex-1 py-3 font-bold text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 tab-active';
+                btnDec.className = 'tab-btn flex-1 py-3 font-bold text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 tab-inactive';
+            } else {
+                btnDMS.className = 'tab-btn flex-1 py-3 font-bold text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 tab-inactive';
+                btnDec.className = 'tab-btn flex-1 py-3 font-bold text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 tab-active';
+            }
         }
 
-        // --- FUNÇÃO DE COLAGEM INTELIGENTE ---
         document.getElementById('dLat').addEventListener('paste', function(e) {
             let pasteData = (e.clipboardData || window.clipboardData).getData('text');
-            // Regex melhorado para apanhar Graus, Minutos, Segundos e Direção (mesmo com símbolos extras)
             const regex = /(\d+)[º°\s]+(\d+)['\s]+(\d+)['"s\s]+([NSEW])/gi;
             const matches = [...pasteData.matchAll(regex)];
 
             if (matches.length >= 2) {
                 e.preventDefault();
-                // Preenche Latitude
                 document.getElementById('dLat').value = matches[0][1];
                 document.getElementById('mLat').value = matches[0][2];
                 document.getElementById('sLat').value = matches[0][3];
                 document.getElementById('dirLat').value = matches[0][4].toUpperCase();
-                // Preenche Longitude
                 document.getElementById('dLon').value = matches[1][1];
                 document.getElementById('mLon').value = matches[1][2];
                 document.getElementById('sLon').value = matches[1][3];
